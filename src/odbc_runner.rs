@@ -72,28 +72,16 @@ impl clap::ValueEnum for OutputFormat {
 
 pub fn odbc_runner(
     connection_string: Option<String>,
-    data_source_name: Option<String>,
-    username: Option<String>,
-    password: Option<String>,
     params: Option<String>,
     query: String,
     output_format: OutputFormat,
 ) -> Result<(), OdbcSecretsLibError> {
     // Write csv to standard out
     let environment = Environment::new()?;
-    let connection = if connection_string.is_none() {
-        environment.connect(
-            data_source_name.unwrap().as_str(),
-            username.unwrap().as_str(),
-            password.unwrap().as_str(),
-            ConnectionOptions::default(),
-        )
-    } else {
-        environment.connect_with_connection_string(
+    let connection = environment.connect_with_connection_string(
             connection_string.unwrap().as_str(),
             ConnectionOptions::default(),
-        )
-    };
+    );
     let params = match params {
         None => (),
         Some(_params) => serde_json::from_str(_params.as_str())?,

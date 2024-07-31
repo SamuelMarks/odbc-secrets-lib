@@ -71,17 +71,17 @@ impl clap::ValueEnum for OutputFormat {
 }
 
 pub fn odbc_runner(
-    connection_string: Option<String>,
+    connection_string: String,
     params: Option<String>,
-    query: String,
+    command: String,
     output_format: OutputFormat,
 ) -> Result<(), OdbcSecretsLibError> {
     // Write csv to standard out
     let environment = Environment::new()?;
-    let connection = environment.connect_with_connection_string(
-            connection_string.unwrap().as_str(),
-            ConnectionOptions::default(),
-    );
+    let conn_str = connection_string.as_str();
+    log::debug!("Connecting to: {:#}", conn_str);
+    let connection =
+        environment.connect_with_connection_string(conn_str, ConnectionOptions::default())?;
     let params = match params {
         None => (),
         Some(_params) => serde_json::from_str(_params.as_str())?,
@@ -90,10 +90,11 @@ pub fn odbc_runner(
     let out = stdout();
     match output_format {
         OutputFormat::CSV => {
+            log::debug!("Outputting: CSV");
             let mut writer = csv::Writer::from_writer(out);
 
             // most of the following from https://docs.rs/odbc-api/8.1.2/odbc_api/guide/index.html
-            match connection?.execute(query.as_str(), params)? {
+            match connection.execute(command.as_str(), params)? {
                 Some(mut cursor) => {
                     // Write the column names to stdout
                     let headline: Vec<String> = cursor.column_names()?.collect::<Result<_, _>>()?;
@@ -118,7 +119,7 @@ pub fn odbc_runner(
                     }
                 }
                 None => {
-                    eprintln!("Query came back empty. No output has been created.");
+                    log::warn!("Query came back empty. No output has been created.");
                 }
             }
         }

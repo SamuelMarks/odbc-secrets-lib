@@ -1134,6 +1134,7 @@ version = "0.0.1"
 dependencies = [
  "clap",
  "csv",
+ "log",
  "odbc-api",
  "serde_json",
  "strum_macros",
